@@ -453,7 +453,16 @@ if [ "$DRY_RUN" -eq 1 ]; then
     warn "dry-run complete -- nothing was executed"
 else
     ok "all requested stages completed"
-    note "launch eSim with:  cd $ESIM_ROOT && python3 esim.py"
+    # NOT `python3 esim.py`. There is no esim.py on this branch, the entry point
+    # is src/frontEnd/Application.py, it needs the package root on PYTHONPATH,
+    # and it must run under the venv interpreter because the sources import
+    # PyQt6 while every installer installs PyQt5 (ISSUE-14, ISSUE-17).
+    note "launch eSim with:"
+    if [ -x "$STATE_DIR/venv/bin/python" ]; then
+        note "  cd $ESIM_ROOT/src && PYTHONPATH=. $STATE_DIR/venv/bin/python frontEnd/Application.py"
+    else
+        note "  cd $ESIM_ROOT/src && PYTHONPATH=. python3 frontEnd/Application.py"
+    fi
     note "re-check any time: python3 $SCRIPTS/verify_esim.py"
 fi
 printf '\n'
