@@ -313,8 +313,10 @@ is a no-op, and `--revert` that restores byte-identically.
 
 **Nothing is assumed.** Every finding comes from a live probe on your machine.
 Anything that cannot be probed is reported `UNKNOWN` rather than guessed — and
-[docs/BUGS.md](docs/BUGS.md) labels every claim as *Reproduced*, *Detected*, or
-*Confirm on VM* so you can tell exactly what has been demonstrated.
+[docs/BUGS.md](docs/BUGS.md) labels every claim as *Reproduced*, *Detected*,
+*Confirmed on the live VM*, or *Not reproduced on the live VM*, so you can tell
+exactly what has been demonstrated — including the two symptoms that did not
+occur on the test box.
 
 **Zero dependencies.** Python standard library and bash only. Nothing to install
 before you can diagnose why installing things is broken.
