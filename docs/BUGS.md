@@ -9,12 +9,16 @@ running the thing, not copied from a changelog.
 |---|---|
 | **Reproduced** | I triggered this myself and captured the output shown. |
 | **Detected** | `esim_preflight.py` probes the host live and reports it; the mechanism is verified, the specific host value is whatever your machine returns. |
-| **Confirm on VM** | Derived from Ubuntu 25.04 packaging facts. The fix is conditional and self-probing, so it is safe either way, but tick it off on a real plucky box before claiming it. |
+| **Confirmed on the live VM** | Observed on a real Ubuntu 25.04 install on 2026-08-24, with the output quoted. |
+| **Not reproduced on the live VM** | The mechanism and the fix are verified, but this particular symptom did not occur on that box. Said plainly rather than quietly implied. |
 
-Test environment for the "Reproduced" items: Python 3.10.12, **NumPy 2.2.6**,
-**matplotlib 3.10.9**, GCC 11.4 (plus a stubbed GCC 14 for the version gate).
-NumPy and matplotlib are the *same major versions Ubuntu 25.04 ships*, which is
-what makes ISSUE-07 and ISSUE-11 directly verifiable off-box.
+Two test environments, kept distinct on purpose. Off-box, for the "Reproduced"
+items: Python 3.10.12, **NumPy 2.2.6**, **matplotlib 3.10.9**, GCC 11.4 (plus a
+stubbed GCC 14 for the version gate) — NumPy and matplotlib are the *same major
+versions Ubuntu 25.04 ships*, which is what makes ISSUE-07 and ISSUE-11
+verifiable off-box. On-box, for everything labelled *Confirmed on the live VM*: a
+clean **Ubuntu 25.04 (plucky)** VirtualBox guest, kernel 6.14.0-15-generic,
+Python 3.13.3, GCC 14.2.0, on which eSim 2.5's GUI was brought up successfully.
 
 ## Summary
 
@@ -106,7 +110,10 @@ emits the exact 404 above: the probe fires and removes the PPA; against a
 healthy PPA it correctly keeps it. This is also where a real bug lived in my own
 code — see *Rejected hypotheses / self-inflicted bugs* below.
 
-**Confirm on VM** for the 404 itself.
+**Not reproduced on the live VM.** On 2026-08-24 the PPA answered normally, so
+the 404 itself was never observed and the probe correctly left the entry in
+place — exactly the no-false-positive behaviour it was built for. See
+[Not reproduced here](#not-reproduced-here).
 
 ---
 
@@ -136,7 +143,14 @@ restores the compiler behaviour the sources were written against.
 **Reproduced (the mechanism).** A legacy-C snippet compiles with a warning under
 GCC 11 and fails under `-Werror` for the identical diagnostic. The version gate
 was tested against a stubbed `gcc` reporting `14.2.0` (fires) and real 11.4
-(stays dormant). **Confirm on VM** for the real ngspice build.
+(stays dormant).
+
+**Confirmed on the live VM.** GCC 14.2.0 was detected and the gate fired
+(`gcc 14 detected -- relaxed CFLAGS`). The ngspice *compile* it protects never
+ran, because the 25.04 installer never builds ngspice at all — that is
+[ISSUE-15](#issue-15--ngspice-is-never-installed--blocker). The gate is
+therefore proven to arm correctly on plucky, but the legacy-C failure it guards
+against remains demonstrated only against the snippet and the stubbed compiler.
 
 ---
 
@@ -220,7 +234,11 @@ analyser; the mcode backend is far smaller and sufficient.
 **Fix.** Rewrite the *package token* to `ghdl-mcode` on apt install lines only —
 a `ghdl --version` invocation elsewhere is deliberately not touched.
 
-**Confirm on VM** for the exact dependency size.
+**Not reproduced on the live VM.** `ghdl-mcode` was installed ahead of the run,
+so the LLVM pull was never triggered and its exact size was never measured. The
+substitution is proven to happen; the ~1 GB figure comes from the archive's
+dependency metadata, not from a download on this box. See
+[Not reproduced here](#not-reproduced-here).
 
 ---
 
@@ -324,7 +342,11 @@ flags and generated-code layout. Reported rather than patched: a correct fix
 means updating NgVeri's Verilator invocation, which is a code change to eSim's
 NgVeri module rather than an installation fix, and it should be validated against
 real Verilog imports. `esim_preflight.py` reports the installed major version so
-the mismatch is visible. **Confirm on VM.**
+the mismatch is visible.
+
+**Confirmed on the live VM.** `verify_esim.py` reported
+`Verilator 5.032 2025-01-01 rev (Debian 5.032-1)` — a 5.x series against a module
+written for 4.x, so the mismatch is real on plucky and not merely predicted.
 
 ---
 
