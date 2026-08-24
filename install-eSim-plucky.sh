@@ -302,7 +302,7 @@ stage_patch() {
     if [ ! -f "$target" ]; then
         err "install-eSim.sh not found at $target"
         note "clone it first:"
-        note "  git clone -b installer https://github.com/neekhilsingh/eSim.git $ESIM_ROOT"
+        note "  git clone -b installers https://github.com/neekhilsingh/eSim.git $ESIM_ROOT"
         note "or point at an existing clone with --esim-root <path>"
         return 1
     fi
