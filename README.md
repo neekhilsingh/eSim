@@ -2,7 +2,7 @@
 
 # esim-plucky-fix
 
-### Installing eSim 2.5 on Ubuntu 25.04 — twelve issues found, ten fixed
+### Installing eSim 2.5 on Ubuntu 25.04 — seventeen issues found, verified on a live 25.04 box
 
 **FOSSEE eSim Semester Long Internship · Autumn 2026 · Screening Task 4**
 
@@ -11,7 +11,7 @@
 [![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Bash](https://img.shields.io/badge/Bash-5.2-4EAA25?logo=gnubash&logoColor=white)](https://www.gnu.org/software/bash/)
 [![Dependencies](https://img.shields.io/badge/dependencies-none-success)](#design-principles)
-[![Blockers fixed](https://img.shields.io/badge/GUI%20blockers%20fixed-4%2F4-brightgreen)](#what-was-found)
+[![Verified](https://img.shields.io/badge/verified-eSim%202.5%20GUI%20running%20on%2025.04-brightgreen)](#screenshots)
 
 **Author:** Neekhil Kumar Singh · [github.com/neekhilsingh](https://github.com/neekhilsingh)
 
@@ -27,11 +27,23 @@ leaves you with software that will not start.**
 
 Four separate defects block the main GUI, and because `install-eSim.sh` has no
 error trap, all four fail silently. This repository finds them, explains them,
-and fixes them — then proves the result actually runs.
+and fixes them. Installing on a real 25.04 machine then turned up five more that
+no amount of reading could have predicted — including an installer that does not
+parse, and a repository layout where neither branch can install on its own.
+Everything ends with the eSim 2.5 GUI open on plucky; see
+[Screenshots](#screenshots).
 
 ```bash
-git clone -b installer https://github.com/neekhilsingh/eSim.git ~/eSim
-cd ~/eSim && ./install-eSim-plucky.sh
+# 1. this repo (tooling)
+git clone -b installers https://github.com/neekhilsingh/eSim.git ~/eSim
+cd ~/eSim && chmod +x install-eSim-plucky.sh scripts/*.sh
+
+# 2. the eSim source tree, which the installers branch does not carry (ISSUE-14)
+git clone --depth 1 https://github.com/FOSSEE/eSim.git ~/eSim-src
+cp -r ~/eSim/Ubuntu/* ~/eSim-src/
+
+# 3. patch, install, verify
+./install-eSim-plucky.sh --esim-root ~/eSim-src
 ```
 
 One command. Resumable, reversible, and read-only until you say otherwise.
@@ -55,8 +67,9 @@ One command. Resumable, reversible, and read-only until you say otherwise.
 
 ## What was found
 
-Twelve issues. Ten fixed, one detected with manual guidance, one reported.
-Full reasoning, exact error text and root-cause analysis for each: **[docs/BUGS.md](docs/BUGS.md)**.
+Seventeen issues. Twelve fixed, three worked around, one detected with manual
+guidance, one reported. Full reasoning and exact error text for each:
+**[docs/BUGS.md](docs/BUGS.md)**.
 
 | ID | Issue | Severity | Blocks | Status |
 |:---|:---|:---|:---|:---|
@@ -72,8 +85,14 @@ Full reasoning, exact error text and root-cause analysis for each: **[docs/BUGS.
 | [ISSUE-11](docs/BUGS.md#issue-11--matplotlib-removed-cmregister_cmap--minor) | matplotlib dropped `cm.register_cmap` | 🟡 MINOR | plotting | ⚠️ Detected + guided |
 | [ISSUE-12](docs/BUGS.md#issue-12--installer-lacks-error-reporting--resume--minor) | No error trap, no resume | 🟡 MINOR | install-eSim.sh | ✅ Fixed |
 | [ISSUE-10](docs/BUGS.md#issue-10--verilator-5x-vs-ngveri--minor--reported-not-fixed) | Verilator 5.x vs NgVeri 4.x | 🟡 MINOR | NgVeri | 📋 Reported |
+| [ISSUE-13](docs/BUGS.md#issue-13--the-shipped-installer-is-not-valid-bash--blocker) | Shipped installer is not valid bash | 🔴 **BLOCKER** | everything | ✅ Fixed |
+| [ISSUE-14](docs/BUGS.md#issue-14--neither-branch-is-installable-on-its-own--blocker) | Neither branch installs on its own | 🔴 **BLOCKER** | everything | 🔧 Worked around |
+| [ISSUE-15](docs/BUGS.md#issue-15--ngspice-is-never-installed--blocker) | ngspice is never installed | 🔴 **BLOCKER** | all simulation | 🔧 Worked around |
+| [ISSUE-16](docs/BUGS.md#issue-16--the-config-block-writes-to---major) | Config block writes to `/`, then duplicates | 🟠 MAJOR | `~/.esim/config.ini` | ✅ Fixed |
+| [ISSUE-17](docs/BUGS.md#issue-17--the-sources-want-pyqt6-the-installer-installs-pyqt5--blocker) | Sources need PyQt6, installer gives PyQt5 | 🔴 **BLOCKER** | **main GUI** | 🔧 Worked around |
 
-> **All four GUI-blocking defects are fixed.** The task brief weights a
+> **Every GUI-blocking defect is cleared** — the four found by analysis and the
+> four found by installing, which is why eSim 2.5 now starts on plucky. The task brief weights a
 > dependency issue that interrupts the main GUI above one that affects smaller
 > blocks like NgVeri, so ISSUE-01, 02, 03 and 08 were prioritised deliberately.
 
@@ -98,7 +117,7 @@ Do **not** run any of this as root — the orchestrator refuses, on purpose ([IS
 
 ```bash
 # 1. Get the code
-git clone -b installer https://github.com/neekhilsingh/eSim.git ~/eSim
+git clone -b installers https://github.com/neekhilsingh/eSim.git ~/eSim
 cd ~/eSim
 
 # 2. See what your machine is exposed to — read-only, changes nothing
@@ -169,16 +188,15 @@ off instead of recompiling ngspice from scratch.
 
 ## Screenshots
 
-> **Paste your captures into the slots below.** Each one names the exact command
-> that produces it. Save images to `docs/screenshots/` using the filenames shown,
-> and they will appear automatically.
+> **Captured on a clean Ubuntu 25.04 (plucky) VM**, kernel 6.14.0-15, Python
+> 3.13.3, GCC 14.2.0. Each slot names the exact command that produces it.
 
 ### 1 · The host, before anything
 
 `lsb_release -a && gcc --version && python3 --version`
 
-<!-- Save as: docs/screenshots/01-host-info.png -->
-![Ubuntu 25.04 host: release, GCC and Python versions](docs/screenshots/01-host-info.png)
+<!-- Save as: docs/01.png -->
+![Ubuntu 25.04 host: release, GCC and Python versions](docs/01.png)
 
 ---
 
@@ -186,8 +204,8 @@ off instead of recompiling ngspice from scratch.
 
 `python3 scripts/esim_preflight.py`
 
-<!-- Save as: docs/screenshots/02-preflight.png -->
-![Preflight report showing BLOCKER, MAJOR and MINOR findings](docs/screenshots/02-preflight.png)
+<!-- Save as: docs/02.png -->
+![Preflight report showing BLOCKER, MAJOR and MINOR findings](docs/02.png)
 
 ---
 
@@ -195,98 +213,62 @@ off instead of recompiling ngspice from scratch.
 
 `pip3 install tabulate`
 
-<!-- Save as: docs/screenshots/03-pep668.png -->
-![error: externally-managed-environment](docs/screenshots/03-pep668.png)
+<!-- Save as: docs/03.png -->
+![error: externally-managed-environment](docs/03.png)
 
 ---
 
-### 4 · ISSUE-02 reproduced — the KiCad PPA 404
+### 4 · ISSUE-13 — FOSSEE's own installer does not parse
 
-`sudo add-apt-repository -y ppa:kicad/kicad-8.0-releases && sudo apt-get update`
+`bash -n Ubuntu/install-eSim.sh` → syntax error; `OK` once the missing `fi` is restored.
 
-<!-- Save as: docs/screenshots/04-kicad-404.png -->
-![404 Not Found / does not have a Release file for plucky](docs/screenshots/04-kicad-404.png)
-
----
-
-### 5 · ISSUE-03 reproduced — GCC 14 stops the ngspice build
-
-`cd ngspice-* && ./configure --enable-xspice && make 2>&1 | grep -m3 error:`
-
-<!-- Save as: docs/screenshots/05-gcc14-error.png -->
-![implicit declaration of function — error, not warning](docs/screenshots/05-gcc14-error.png)
+<!-- Save as: docs/12.png -->
+![bash -n rejecting the upstream script, then accepting it after the fi is restored](docs/12.png)
 
 ---
 
-### 6 · The unpatched installer failing silently
+### 5 · Exactly what the patch changes
 
-`./install-eSim.sh --install 2>&1 | tail -20`
+`bash scripts/patch-installer.sh --file <installer> --dry-run`
 
-<!-- Save as: docs/screenshots/06-upstream-fails.png -->
-![Upstream installer printing success despite failed dependency steps](docs/screenshots/06-upstream-fails.png)
-
----
-
-### 7 · Exactly what the patch changes
-
-`./scripts/patch-installer.sh --file install-eSim.sh --dry-run`
-
-<!-- Save as: docs/screenshots/07-patch-diff.png -->
-![Unified diff of the four anchored rewrites plus the shim preamble](docs/screenshots/07-patch-diff.png)
+<!-- Save as: docs/07.png -->
+![Unified diff of the anchored rewrites plus the shim preamble](docs/07.png)
 
 ---
 
-### 8 · The full run
+### 6 · ISSUE-07 found and fixed in eSim's own sources
 
-`./install-eSim-plucky.sh`
+`python3 scripts/patch_esim_sources.py --root ~/eSim-src --diff`
 
-<!-- Save as: docs/screenshots/08-orchestrator.png -->
-![Stage-by-stage run ending in the summary table](docs/screenshots/08-orchestrator.png)
-
----
-
-### 9 · ISSUE-07 found and fixed in eSim's own sources
-
-`python3 scripts/patch_esim_sources.py --root ~/eSim --diff`
-
-<!-- Save as: docs/screenshots/09-numpy-diff.png -->
-![NumPy alias occurrences with file, line and the proposed rewrite](docs/screenshots/09-numpy-diff.png)
+<!-- Save as: docs/09.png -->
+![NumPy alias occurrences with file, line and the proposed rewrite](docs/09.png)
 
 ---
 
-### 10 · Verification: it genuinely works
+### 7 · The full run
+
+`./install-eSim-plucky.sh --esim-root ~/eSim-src`
+
+<!-- Save as: docs/08.png -->
+![Stage-by-stage run ending in the summary table](docs/08.png)
+
+---
+
+### 8 · Verification
 
 `python3 scripts/verify_esim.py`
 
-<!-- Save as: docs/screenshots/10-verify.png -->
-![All required checks passing, including a real QApplication and XSPICE](docs/screenshots/10-verify.png)
+<!-- Save as: docs/10.png -->
+![12/14 checks passing, zero required failures](docs/10.png)
 
 ---
 
-### 11 · eSim running
+### 9 · eSim 2.5 running on Ubuntu 25.04
 
-`cd ~/eSim && python3 esim.py`
+`cd ~/eSim-src/src && PYTHONPATH=. ~/.esim/venv/bin/python frontEnd/Application.py`
 
-<!-- Save as: docs/screenshots/11-esim-gui.png -->
-![eSim 2.5 main window on Ubuntu 25.04](docs/screenshots/11-esim-gui.png)
-
----
-
-### 12 · A simulation, plotted
-
-Open any example, run **Simulation**, then **Plot Data**.
-
-<!-- Save as: docs/screenshots/12-esim-plot.png -->
-![ngspice simulation waveform plotted inside eSim](docs/screenshots/12-esim-plot.png)
-
----
-
-### 13 · NGHDL / NgVeri
-
-Open **NGHDL** (or **NgVeri**) from the eSim toolbar.
-
-<!-- Save as: docs/screenshots/13-nghdl.png -->
-![NGHDL VHDL co-simulation window](docs/screenshots/13-nghdl.png)
+<!-- Save as: docs/11.png -->
+![eSim 2.5 main window on Ubuntu 25.04](docs/11.png)
 
 ---
 
@@ -349,7 +331,7 @@ esim-plucky-fix/
 │   └── fixture-install-eSim.sh     # reproduces upstream's shapes for testing
 └── docs/
     ├── BUGS.md                     # per-issue root-cause analysis
-    └── screenshots/                # your captures go here
+    └── 01.png … 12.png            # captures from the live 25.04 run
 ```
 
 ---
