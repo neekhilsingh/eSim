@@ -32,8 +32,17 @@ what makes ISSUE-07 and ISSUE-11 directly verifiable off-box.
 | ISSUE-11 | matplotlib removed `cm.register_cmap` | MINOR | eSim plotting | Detected + guided |
 | ISSUE-12 | installer lacks error reporting / resume | MINOR | install-eSim.sh | Fixed |
 | ISSUE-10 | Verilator 5.x vs NgVeri (expects 4.x) | MINOR | NgVeri | Reported only |
+| ISSUE-13 | shipped installer is not valid bash | **BLOCKER** | install-eSim.sh | Fixed |
+| ISSUE-14 | neither branch is installable alone | **BLOCKER** | repo layout | Worked around |
+| ISSUE-15 | ngspice is never installed | **BLOCKER** | simulation | Worked around |
+| ISSUE-16 | config block writes to `/`, then duplicates | MAJOR | `~/.esim/config.ini` | Fixed |
+| ISSUE-17 | sources need PyQt6, installer gives PyQt5 | **BLOCKER** | eSim main GUI | Worked around |
 
-All four blockers — the ones that stop the **main GUI** from ever appearing — are fixed.
+ISSUE-13 through ISSUE-17 were found by installing on the target OS rather than
+by analysis, and are written up under
+[Found only by installing for real](#found-only-by-installing-for-real). The
+result of fixing all of them is eSim 2.5 running on Ubuntu 25.04 — screenshot 9
+in the README.
 
 ---
 
@@ -368,10 +377,102 @@ fifth match was prose inside a comment block, which reads to a reviewer like a
 partial failure. Counters now ignore comment-only lines, and every reported
 count was cross-checked against the actual patched file.
 
-## Still to confirm on a real Ubuntu 25.04 box
+## Confirmed on a real Ubuntu 25.04 box
 
-The KiCad PPA 404 for `plucky`; the real ngspice build failure under GCC 14;
-`apt-key` absence; `python3-distutils` absence; the `ghdl-llvm` dependency size;
-and the installed Verilator major version. Every fix for these is conditional
-and self-probing, so it is inert where the issue is absent — but the report
-should say "confirmed" only where it is.
+Everything below was run on a clean Ubuntu 25.04 (plucky) VM — kernel
+6.14.0-15-generic, Python 3.13.3, GCC 14.2.0 — and ended with the eSim 2.5 GUI
+open on that desktop. Preflight reported 12 checks, 7 affected, 4 blocking
+(ISSUE-01/02/03/08).
+
+Confirmed live: ISSUE-01 (`pip3 install tabulate` → `error:
+externally-managed-environment`), ISSUE-04 (`apt-key absent -- installed
+gpg --dearmor shim`), ISSUE-05 (`python3-distutils` gone from the archive),
+ISSUE-07 (NumPy alias scan over the real tree), and ISSUE-03 indirectly — the
+`gcc 14 detected -- relaxed CFLAGS exported for ngspice` shim fired during the
+install. ISSUE-06 did not apply: no apt line in this branch's installer
+installs `ghdl`, and the archive `ghdl-mcode` 5.0.1 was already present.
+ISSUE-10 confirmed: Verilator 5.032 is installed where NgVeri expects 4.x.
+
+Final state: `verify_esim.py` → 12/14 passed, **0 required failures**, 2
+warnings (XSPICE not reported by the archive ngspice build; no `.desktop`
+launcher). eSim 2.5 starts and reports `eSim Started`.
+
+## Found only by installing for real
+
+These five are not in the summary table above because they did not exist as
+hypotheses — nothing short of a full install on the target OS surfaces them.
+They are the most interesting findings in this report.
+
+### ISSUE-13 — the shipped installer is not valid bash · BLOCKER
+
+`Ubuntu/install-eSim.sh` on the `installers` branch contains
+
+```bash
+if [[ -f "$SCRIPT" ]]; then
+    echo "Running script: $SCRIPT $ARGUMENT"
+    bash "$SCRIPT"  "$ARGUMENT"
+```
+
+and never closes the `if`. The function's closing `}` is therefore a syntax
+error and `bash -n` rejects the file (rc 2) **before any patching**. The script
+cannot run on any OS, on any release, as shipped. Repaired by restoring `fi`
+after the `bash "$SCRIPT"` call, which is where the original indentation puts
+the end of the block.
+
+### ISSUE-14 — neither branch is installable on its own · BLOCKER
+
+The `installers` branch carries the per-OS installers but no `library/`, so
+`tar -xf library/kicadLibrary.tar.xz` fails with *No such file or directory* and
+the install aborts after KiCad. The default branch carries `library/`, `src/`
+and `images/` but ships **no `install-eSim.sh` at all**. A working install
+requires copying the installer tree into a full source checkout — an
+undocumented step. Reproduced by cloning both.
+
+### ISSUE-15 — ngspice is never installed · BLOCKER
+
+`install-eSim-scripts/install-eSim-25.04.sh` neither builds ngspice from source
+nor apt-installs it, and no ngspice tarball exists in `library/`. After a
+"successful" install, `which ngspice` is empty and eSim cannot simulate at all.
+`verify_esim.py` caught this as its one required failure. Worked around with the
+archive package (`ngspice 44.2`), which resolves the blocker but does not report
+XSPICE, so NGHDL/NgVeri code models may not load.
+
+### ISSUE-16 — the config block writes to `/` · MAJOR
+
+The same mis-merge that dropped the `fi` also left seven
+
+```bash
+echo "eSim_HOME = $eSim_Home" >> $config_dir/$config_file
+```
+
+lines outside the function that defines `config_dir`, `config_file` and
+`eSim_Home`. With all three unset the redirect becomes `>> /`, producing seven
+`/: Is a directory` errors and a non-zero exit — and no config file. Because the
+block also runs from both the top-level script and the per-release sub-script,
+once the variables *are* defined the section is written twice, and eSim then dies
+with `configparser.DuplicateSectionError: section 'eSim' already defined`.
+Fixed by defining the three variables before the block.
+
+### ISSUE-17 — the sources want PyQt6, the installer installs PyQt5 · BLOCKER
+
+`src/frontEnd/Application.py` on the default branch opens with
+`from PyQt6 import QtGui, QtCore, QtWidgets`, while every installer branch
+installs PyQt5 (and this project's ISSUE-08 fix installs the Qt5 QScintilla
+bindings). Launching gives `ModuleNotFoundError: No module named 'PyQt6'`. The
+GUI comes up after `pip install PyQt6 PyQt6-QScintilla` into the eSim venv.
+Cosmetic knock-on: menu labels render as literal `<b>New Project</b>` because
+Qt6 no longer auto-interprets rich text in those widgets.
+
+Two further practical notes. `src/` must be on `PYTHONPATH` for
+`from configuration.Appconfig import Appconfig` to resolve, so the working
+launch is `cd src && PYTHONPATH=. python frontEnd/Application.py` — there is no
+`esim.py` entry point on this branch. And installers uploaded through the GitHub
+web UI lose their execute bit, giving `Permission denied`; `chmod +x` first.
+
+## Not reproduced here
+
+The KiCad PPA 404 could not be observed, because this branch's installer
+installs KiCad 8.0 from a path that succeeded on plucky — the guard was inert,
+which is the intended behaviour. The `ghdl-llvm` size penalty likewise did not
+arise. Both fixes remain conditional and self-probing, and this report claims
+"confirmed" only where a live probe showed it.
