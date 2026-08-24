@@ -195,8 +195,8 @@ off instead of recompiling ngspice from scratch.
 
 `lsb_release -a && gcc --version && python3 --version`
 
-<!-- Save as: docs/01.png -->
-![Ubuntu 25.04 host: release, GCC and Python versions](docs/01.png)
+<!-- Save as: docs/screenshots/01.png -->
+![Ubuntu 25.04 host: release, GCC and Python versions](docs/screenshots/01.png)
 
 ---
 
@@ -204,8 +204,8 @@ off instead of recompiling ngspice from scratch.
 
 `python3 scripts/esim_preflight.py`
 
-<!-- Save as: docs/02.png -->
-![Preflight report showing BLOCKER, MAJOR and MINOR findings](docs/02.png)
+<!-- Save as: docs/screenshots/02.png -->
+![Preflight report showing BLOCKER, MAJOR and MINOR findings](docs/screenshots/02.png)
 
 ---
 
@@ -213,8 +213,8 @@ off instead of recompiling ngspice from scratch.
 
 `pip3 install tabulate`
 
-<!-- Save as: docs/03.png -->
-![error: externally-managed-environment](docs/03.png)
+<!-- Save as: docs/screenshots/03.png -->
+![error: externally-managed-environment](docs/screenshots/03.png)
 
 ---
 
@@ -222,8 +222,8 @@ off instead of recompiling ngspice from scratch.
 
 `bash -n Ubuntu/install-eSim.sh` → syntax error; `OK` once the missing `fi` is restored.
 
-<!-- Save as: docs/12.png -->
-![bash -n rejecting the upstream script, then accepting it after the fi is restored](docs/12.png)
+<!-- Save as: docs/screenshots/12.png -->
+![bash -n rejecting the upstream script, then accepting it after the fi is restored](docs/screenshots/12.png)
 
 ---
 
@@ -231,17 +231,22 @@ off instead of recompiling ngspice from scratch.
 
 `bash scripts/patch-installer.sh --file <installer> --dry-run`
 
-<!-- Save as: docs/07.png -->
-![Unified diff of the anchored rewrites plus the shim preamble](docs/07.png)
+<!-- Save as: docs/screenshots/07.png -->
+![Unified diff of the anchored rewrites plus the shim preamble](docs/screenshots/07.png)
 
 ---
 
-### 6 · ISSUE-07 found and fixed in eSim's own sources
+### 6 · The ISSUE-07 codemod, run against the real tree
 
-`python3 scripts/patch_esim_sources.py --root ~/eSim-src --diff`
+`python3 scripts/patch_esim_sources.py --root ~/eSim --diff`
 
-<!-- Save as: docs/09.png -->
-![NumPy alias occurrences with file, line and the proposed rewrite](docs/09.png)
+73 `.py` files scanned, **0 occurrences** — this particular tree does not use any
+removed NumPy or matplotlib name, so no rewrite is needed. That is a real result,
+not a failed scan, and it is recorded as such in
+[docs/BUGS.md](docs/BUGS.md).
+
+<!-- Save as: docs/screenshots/09.png -->
+![Preflight summary and the source scan reporting a clean tree](docs/screenshots/09.png)
 
 ---
 
@@ -249,8 +254,8 @@ off instead of recompiling ngspice from scratch.
 
 `./install-eSim-plucky.sh --esim-root ~/eSim-src`
 
-<!-- Save as: docs/08.png -->
-![Stage-by-stage run ending in the summary table](docs/08.png)
+<!-- Save as: docs/screenshots/08.png -->
+![Stage-by-stage run ending in the summary table](docs/screenshots/08.png)
 
 ---
 
@@ -258,8 +263,8 @@ off instead of recompiling ngspice from scratch.
 
 `python3 scripts/verify_esim.py`
 
-<!-- Save as: docs/10.png -->
-![12/14 checks passing, zero required failures](docs/10.png)
+<!-- Save as: docs/screenshots/10.png -->
+![12/14 checks passing, zero required failures](docs/screenshots/10.png)
 
 ---
 
@@ -267,8 +272,8 @@ off instead of recompiling ngspice from scratch.
 
 `cd ~/eSim-src/src && PYTHONPATH=. ~/.esim/venv/bin/python frontEnd/Application.py`
 
-<!-- Save as: docs/11.png -->
-![eSim 2.5 main window on Ubuntu 25.04](docs/11.png)
+<!-- Save as: docs/screenshots/11.png -->
+![eSim 2.5 main window on Ubuntu 25.04](docs/screenshots/11.png)
 
 ---
 
@@ -331,7 +336,8 @@ esim-plucky-fix/
 │   └── fixture-install-eSim.sh     # reproduces upstream's shapes for testing
 └── docs/
     ├── BUGS.md                     # per-issue root-cause analysis
-    └── 01.png … 12.png            # captures from the live 25.04 run
+    └── screenshots/                # captures from the live 25.04 run
+        └── 01.png … 12.png
 ```
 
 ---
@@ -354,12 +360,12 @@ The revert is byte-identical to upstream — verified by checksum.
 | Task 4 requirement | Where |
 |:---|:---|
 | Install eSim 2.5 on Ubuntu 25.04 | `install-eSim-plucky.sh` — six stages, resumable |
-| Identify dependency / installation problems | 12 issues, [docs/BUGS.md](docs/BUGS.md) |
-| Fix at least one problem | **10 fixed**, including all 4 GUI blockers |
+| Identify dependency / installation problems | 17 issues, [docs/BUGS.md](docs/BUGS.md) |
+| Fix at least one problem | **12 fixed**, including every one of the GUI blockers |
 | Well-documented report | This README + [docs/BUGS.md](docs/BUGS.md) with exact error text, root cause, fix and verification per issue |
 | Bash scripting | `install-eSim-plucky.sh`, `patch-installer.sh` |
 | Python | `esim_preflight.py`, `patch_esim_sources.py`, `verify_esim.py` |
-| Git | Fork of [FOSSEE/eSim](https://github.com/FOSSEE/eSim), `installer` branch |
+| Git | Fork of [FOSSEE/eSim](https://github.com/FOSSEE/eSim), `installers` branch |
 
 ---
 
